@@ -46,6 +46,8 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     emit(PostLoadingState());
     try {
       await repos.updatePost(event.post);
+      print(event.post);
+      print("OK");
       add(LoadedPostEvent());
     } catch (e) {
       emit(PostErrorState(e.toString()));

@@ -7,7 +7,7 @@ class PostApiService {
   // obtenir les données (GET)
   Future<List<PostModel>> apiGetAllPosts() async {
     final response = await dio.get(url);
-    print(" APi : ${response.data}");
+    // print(" APi : ${response.data}");
     return (response.data as List).map((e) => PostModel.fromJson(e)).toList();
   }
 
@@ -19,7 +19,9 @@ class PostApiService {
 
   // mettre a jour
   Future<PostModel> apiUpdatePost(PostModel post) async {
+    print("test");
     final response = await dio.put("$url/${post.id}", data: post.toJson());
+    print(response.statusCode);
     return PostModel.fromJson(response.data);
   }
 

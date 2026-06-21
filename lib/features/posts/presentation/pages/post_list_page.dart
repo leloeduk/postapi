@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:leloapp/features/posts/presentation/bloc/post_bloc.dart';
 import 'package:leloapp/features/posts/presentation/bloc/post_event.dart';
 import 'package:leloapp/features/posts/presentation/pages/post_updated_page.dart';
-
+import '../../domain/entities/post.dart';
 import '../bloc/post_state.dart';
 import 'post_edit_page.dart';
 
@@ -15,6 +15,19 @@ class PostListPage extends StatefulWidget {
 }
 
 class _PostListPageState extends State<PostListPage> {
+  String query = "";
+  TextEditingController searchController = TextEditingController();
+
+  List<Post> listPosts(List<Post> posts) {
+    if (query.isEmpty) {
+      return posts;
+    }
+    return posts.where((data) {
+      return data.name.toLowerCase().contains(query.toLowerCase()) ||
+          data.title.contains(query.toLowerCase());
+    }).toList();
+  }
+
   @override
   void initState() {
     context.read<PostBloc>().add(LoadedPostEvent());
@@ -25,7 +38,23 @@ class _PostListPageState extends State<PostListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade300,
-      appBar: AppBar(backgroundColor: Colors.green, title: Text("Les Posts")),
+      appBar: AppBar(
+        backgroundColor: Colors.green,
+        title: TextFormField(
+          controller: searchController,
+          onChanged: (value) {
+            setState(() {
+              query = value;
+            });
+          },
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+
+            border: OutlineInputBorder(),
+          ),
+        ),
+      ),
       body: BlocConsumer<PostBloc, PostState>(
         builder: (context, state) {
           if (state is PostLoadingState) {
@@ -33,77 +62,71 @@ class _PostListPageState extends State<PostListPage> {
           }
           if (state is PostLoadedState) {
             return ListView.builder(
-              itemCount: state.posts.length,
+              itemCount: listPosts(state.posts).length,
               itemBuilder: (context, index) {
-                final currentIndex = state.posts[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            PostUpdatedPage(model: currentIndex),
-                      ),
+                final currentIndex = listPosts(state.posts)[index];
+                return Dismissible(
+                  key: Key(currentIndex.id),
+                  onDismissed: (direction) {
+                    context.read<PostBloc>().add(
+                      DeletePostEvent(currentIndex.id),
                     );
                   },
-                  child: Card(
-                    elevation: 4,
-                    margin: EdgeInsets.all(10),
-                    color: Colors.white,
-                    child: Container(
-                      padding: EdgeInsets.all(10),
-                      child: Row(
-                        children: [
-                          Column(
-                            children: [
-                              Text(
-                                currentIndex.name,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                  // direction: DismissDirection.endToStart,
+                  background: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(Icons.delete, size: 80, color: Colors.white),
+                  ),
+
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              PostUpdatedPage(model: currentIndex),
+                        ),
+                      );
+                    },
+                    child: Card(
+                      elevation: 4,
+                      margin: EdgeInsets.all(10),
+                      color: Colors.white,
+                      child: Container(
+                        padding: EdgeInsets.all(10),
+                        child: Row(
+                          children: [
+                            Column(
+                              children: [
+                                Text(
+                                  currentIndex.name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              CircleAvatar(
-                                radius: 30,
-                                backgroundImage: NetworkImage(
-                                  currentIndex.avatar,
+                                CircleAvatar(
+                                  radius: 30,
+                                  backgroundImage: NetworkImage(
+                                    currentIndex.avatar,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(width: 20),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(currentIndex.createdAt),
-                              Text(currentIndex.title),
-                              Text(currentIndex.body),
-                            ],
-                          ),
-                          Column(
-                            children: [
-                              IconButton(
-                                onPressed: () {
-                                  context.read<PostBloc>().add(
-                                    DeletePostEvent(currentIndex.id),
-                                  );
-                                },
-                                icon: Icon(Icons.delete, color: Colors.red),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PostEditPage(),
-                                    ),
-                                  );
-                                },
-                                icon: Icon(Icons.edit, color: Colors.blue),
-                              ),
-                            ],
-                          ),
-                        ],
+                              ],
+                            ),
+                            SizedBox(width: 20),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(currentIndex.createdAt),
+                                Text(currentIndex.title),
+                                Text(currentIndex.body),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -125,6 +148,16 @@ class _PostListPageState extends State<PostListPage> {
             ScaffoldMessenger(child: SnackBar(content: Text(state.message)));
           }
         },
+      ),
+
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => PostEditPage()),
+          );
+        },
+        child: Icon(Icons.add),
       ),
     );
   }
