@@ -7,6 +7,7 @@ import 'package:leloapp/features/posts/presentation/bloc/post_event.dart';
 import 'features/posts/presentation/pages/post_list_page.dart';
 
 void main() {
+  // runApp
   runApp(const MyApp());
 }
 
